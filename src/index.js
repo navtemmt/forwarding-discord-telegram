@@ -36,26 +36,62 @@ const formatSize = (length) => {
 
 client.on("messageCreate", (message) => {
 	if (
-		config.mutedChannelsIds.toString() != "" &&
-		config.mutedChannelsIds != undefined
-	) {
-		if (
-			config.mutedChannelsIds.includes(message.channel.id) ||
-			config.mutedChannelsIds.includes(Number(message.channel.id))
-		)
-			return;
-	}
+		config.mutedChannelsIds != undefined &&
+		config.mutedChannelsIds?.length != 0 &&
+		(config.mutedChannelsIds?.includes(message.channel.id) ||
+			config.mutedChannelsIds?.includes(Number(message.channel.id)))
+	)
+		return;
 
 	if (
-		config.allowedChannelsIds.toString() != "" &&
-		config.allowedChannelsIds != undefined
-	) {
-		if (
-			!config.allowedChannelsIds.includes(message.channel.id) &&
-			!config.allowedChannelsIds.includes(Number(message.channel.id))
+		config.allowedChannelsIds != undefined &&
+		config.allowedChannelsIds?.length != 0 &&
+		!config.allowedChannelsIds?.includes(message.channel.id) &&
+		!config.allowedChannelsIds?.includes(Number(message.channel.id))
+	)
+		return;
+
+	if (
+		config.mutedUsersIds != undefined &&
+		config.mutedUsersIds?.length != 0 &&
+		(config.mutedUsersIds?.includes(message.author.id) ||
+			config.mutedUsersIds?.includes(Number(message.author.id)))
+	)
+		return;
+
+	if (
+		config.allowedUsersIds != undefined &&
+		config.allowedUsersIds?.length != 0 &&
+		!config.allowedUsersIds?.includes(message.author.id) &&
+		!config.allowedUsersIds?.includes(Number(message.author.id))
+	)
+		return;
+
+	if (
+		config.channelConfigs[message.channel.id] != undefined &&
+		config.channelConfigs[message.channel.id]?.allowed != undefined &&
+		config.channelConfigs[message.channel.id]?.allowed?.length != 0 &&
+		!config.channelConfigs[message.channel.id]?.allowed?.includes(
+			message.author.id
+		) &&
+		!config.channelConfigs[message.channel.id]?.allowed?.includes(
+			Number(message.author.id)
 		)
-			return;
-	}
+	)
+		return;
+
+	if (
+		config.channelConfigs[message.channel.id] != undefined &&
+		config.channelConfigs[message.channel.id]?.muted != undefined &&
+		config.channelConfigs[message.channel.id]?.muted?.length != 0 &&
+		(config.channelConfigs[message.channel.id]?.muted?.includes(
+			message.author.id
+		) ||
+			config.channelConfigs[message.channel.id]?.muted?.includes(
+				Number(message.author.id)
+			))
+	)
+		return;
 
 	const date = new Date().toLocaleString("en-US", {
 		day: "2-digit",
@@ -126,7 +162,14 @@ client.on("messageCreate", (message) => {
 	if (allAttachments.length != 0) render += allAttachments.join("");
 
 	console.log(render);
-	global.tempText += `${render}\n`;
+
+	if (config.stackMessages) return global.tempText += `${render}\n\n`;
+
+	sendData(render);
+});
+
+bot.catch((err) => {
+	console.log(err);
 });
 
 const sendData = (text) => {
@@ -138,10 +181,11 @@ const sendData = (text) => {
 	}
 };
 
-setInterval(() => {
-	sendData(global.tempText);
+if (config.stackMessages)
+	setInterval(() => {
+		sendData(global.tempText);
 
-	global.tempText = "";
-}, 5000);
+		global.tempText = "";
+	}, 5000);
 
 client.login(process.env.DISCORD_TOKEN);
